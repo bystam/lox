@@ -6,6 +6,9 @@ import kotlin.io.path.readBytes
 import kotlin.system.exitProcess
 
 object Lox {
+
+    private val interpreter = Interpreter()
+
     @JvmStatic
     fun main(args: Array<String>): Unit = when {
         args.size > 1 -> {
@@ -24,6 +27,9 @@ object Lox {
         val bytes = Paths.get(path).readBytes()
         val script = String(bytes, Charset.defaultCharset())
         run(script)
+
+        if (Error.hadError) exitProcess(65)
+        if (Error.hadRuntimeError) exitProcess(70)
     }
 
     private fun runPrompt() {
@@ -31,6 +37,7 @@ object Lox {
         prompt.forEach { line ->
             run(line)
             Error.hadError = false
+            Error.hadRuntimeError = false
         }
     }
 
@@ -40,6 +47,6 @@ object Lox {
         val parser = Parser(tokens)
         val expr = parser.parse() ?: return
 
-        println(AstPrinter().print(expr))
+        interpreter.interpret(expr)
     }
 }
