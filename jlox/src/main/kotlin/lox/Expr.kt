@@ -27,7 +27,7 @@ sealed interface Expr {
     }
 
     data class Literal(
-        val value: Any,
+        val value: Any?,
     ) : Expr {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitLiteralExpr(this)
     }
