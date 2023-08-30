@@ -37,7 +37,9 @@ object Lox {
     private fun run(script: String) {
         val scanner = Scanner(script)
         val tokens = scanner.scanTokens()
+        val parser = Parser(tokens)
+        val expr = parser.parse() ?: return
 
-        tokens.forEach { println(it) }
+        println(AstPrinter().print(expr))
     }
 }
