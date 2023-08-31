@@ -8,6 +8,7 @@ sealed interface Expr {
         fun visitBinaryExpr(expr: Binary): R
         fun visitGroupingExpr(expr: Grouping): R
         fun visitLiteralExpr(expr: Literal): R
+        fun visitLogicalExpr(expr: Logical): R
         fun visitUnaryExpr(expr: Unary): R
         fun visitVariableExpr(expr: Variable): R
     }
@@ -39,6 +40,14 @@ sealed interface Expr {
         val value: Any?,
     ) : Expr {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitLiteralExpr(this)
+    }
+
+    data class Logical(
+        val left: Expr,
+        val operator: Token,
+        val right: Expr,
+    ) : Expr {
+        override fun <R> accept(visitor: Visitor<R>): R = visitor.visitLogicalExpr(this)
     }
 
     data class Unary(

@@ -12,6 +12,8 @@ class AstPrinter : Expr.Visitor<String> {
 
     override fun visitLiteralExpr(expr: Expr.Literal): String = expr.value?.toString() ?: "nil"
 
+    override fun visitLogicalExpr(expr: Expr.Logical): String = parenthesize(expr.operator.lexeme, expr.left, expr.right)
+
     override fun visitUnaryExpr(expr: Expr.Unary): String = parenthesize(expr.operator.lexeme, expr.right)
     override fun visitVariableExpr(expr: Expr.Variable): String = expr.name.lexeme
 

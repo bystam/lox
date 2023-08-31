@@ -36,14 +36,29 @@ class Parser(
     }
 
     // statement      → exprStmt
-    //                | printStmt ;
-    //                | block
+    //                | ifStmt
+    //                | printStmt
+    //                | block;
     private fun statement(): Stmt {
         return when {
+            match(TokenType.IF) -> ifStatement()
             match(TokenType.PRINT) -> printStatement()
             match(TokenType.LEFT_BRACE) -> block()
             else -> expressionStatement()
         }
+    }
+
+    // ifStmt         → "if" "(" expression ")" statement
+    //                  ( "else" statement )? ;
+    private fun ifStatement(): Stmt {
+        consume(TokenType.LEFT_PAREN, "Expected '(' after if.")
+        val condition = expression()
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after if condition.")
+
+        val thenBranch = statement()
+        var elseBranch: Stmt? = if (match(TokenType.ELSE)) statement() else null
+
+        return Stmt.If(condition, thenBranch, elseBranch)
     }
 
     // block          → "{" declaration* "}" ;
@@ -76,9 +91,9 @@ class Parser(
     private fun expression(): Expr = assignment()
 
     // assignment     → IDENTIFIER "=" assignment
-    //                | equality ;
+    //                | logic_or ;
     private fun assignment(): Expr {
-        val expr = equality()
+        val expr = or()
         if (match(TokenType.EQUAL)) {
             val equals = previous()
             val value = assignment()
@@ -89,6 +104,28 @@ class Parser(
             error(equals, "Invalid assignment target.")
         }
         return expr
+    }
+
+    // logic_or       → logic_and ( "or" logic_and )* ;
+    private fun or(): Expr {
+        val left = and()
+        if (match(TokenType.OR)) {
+            val operator = previous()
+            val right = and()
+            return Expr.Logical(left, operator, right)
+        }
+        return left
+    }
+
+    // logic_and      → equality ( "and" equality )* ;
+    private fun and(): Expr {
+        val left = equality()
+        if (match(TokenType.AND)) {
+            val operator = previous()
+            val right = equality()
+            return Expr.Logical(left, operator, right)
+        }
+        return left
     }
 
     // equality       → comparison ( ( "!=" | "==" ) comparison )* ;

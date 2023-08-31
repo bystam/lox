@@ -1,3 +1,7 @@
 
-var a = "hej";
-print a;
+var a = "Hello ";
+if (a) {
+  print a + " world!";
+} else {
+  print "fuck";
+}
