@@ -66,13 +66,13 @@ class Parser(
     private fun assignment(): Expr {
         val expr = equality()
         if (match(TokenType.EQUAL)) {
-            val token = previous()
+            val equals = previous()
             val value = assignment()
             if (expr is Expr.Variable) { // was an l-value, not an r-value
-                return Expr.Assign(token, value)
+                return Expr.Assign(expr.name, value)
             }
 
-            error(token, "Invalid assignment target.")
+            error(equals, "Invalid assignment target.")
         }
         return expr
     }
