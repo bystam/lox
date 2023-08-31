@@ -19,7 +19,10 @@ object Lox {
             runFile(args.single())
         }
         else -> {
-            runPrompt()
+            val projectDirectory = System.getProperty("user.dir")
+            val path = "$projectDirectory/src/main/resources/program.lox"
+            runFile(path)
+//            runPrompt()
         }
     }
 
