@@ -20,6 +20,7 @@ object GenerateAst {
         ))
 
         defineAst(outputDir, "Stmt", listOf(
+            "Block      : List<Stmt> statements",
             "Expression : Expr expression",
             "Print      : Expr expression",
             "Var        : Token name, Expr? initializer",

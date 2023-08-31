@@ -2,7 +2,7 @@ package lox
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
-    private val environment = Environment()
+    private var environment = Environment()
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -15,6 +15,10 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     /// ----- Stmt.Visitor -----
+
+    override fun visitBlockStmt(stmt: Stmt.Block) {
+        executeBlock(stmt.statements)
+    }
 
     override fun visitVarStmt(stmt: Stmt.Var) {
         val initialValue = stmt.initializer?.let { evaluate(it) }
@@ -32,6 +36,18 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     private fun execute(statement: Stmt) {
         statement.accept(this)
+    }
+
+    private fun executeBlock(statements: List<Stmt>) {
+        val originalEnvironment = environment
+        try {
+            this.environment = Environment(originalEnvironment)
+            statements.forEach { statement ->
+                execute(statement)
+            }
+        } finally {
+            this.environment = originalEnvironment
+        }
     }
 
     /// ----- Expr.Visitor -----

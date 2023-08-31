@@ -1,6 +1,8 @@
 package lox
 
-class Environment {
+class Environment(
+    val enclosing: Environment? = null
+) {
     private val values: MutableMap<String, Any?> = mutableMapOf()
 
     fun define(name: String, value: Any?) {
@@ -8,16 +10,24 @@ class Environment {
     }
 
     fun assign(name: Token, value: Any?) {
-        if (!values.containsKey(name.lexeme)) {
-            throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
+        if (values.containsKey(name.lexeme)) {
+            values[name.lexeme] = value
+            return
         }
-        values[name.lexeme] = value
+        enclosing?.let { enc ->
+            enc.assign(name, value)
+            return
+        }
+        throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
     }
 
     fun get(name: Token): Any? {
-        if (!values.containsKey(name.lexeme)) {
-            throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
+        if (values.containsKey(name.lexeme)) {
+            return values[name.lexeme]
         }
-        return values[name.lexeme]
+        enclosing?.let { enc ->
+            return enc.get(name)
+        }
+        throw RuntimeError(name, "Undefined variable: ${name.lexeme}.")
     }
 }

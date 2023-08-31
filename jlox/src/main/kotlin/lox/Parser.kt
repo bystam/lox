@@ -37,11 +37,25 @@ class Parser(
 
     // statement      → exprStmt
     //                | printStmt ;
+    //                | block
     private fun statement(): Stmt {
-        return if (match(TokenType.PRINT))
-            printStatement()
-        else
-            expressionStatement()
+        return when {
+            match(TokenType.PRINT) -> printStatement()
+            match(TokenType.LEFT_BRACE) -> block()
+            else -> expressionStatement()
+        }
+    }
+
+    // block          → "{" declaration* "}" ;
+    private fun block(): Stmt {
+        val statements = mutableListOf<Stmt>()
+
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            declaration()?.let { statements += it }
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expected closing '}' after block.")
+        return Stmt.Block(statements)
     }
 
     // printStmt      → "print" expression ";" ;
