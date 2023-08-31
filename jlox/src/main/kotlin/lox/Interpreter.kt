@@ -1,15 +1,33 @@
 package lox
 
-class Interpreter : Expr.Visitor<Any?> {
+class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
-    fun interpret(expression: Expr) {
+    fun interpret(statements: List<Stmt>) {
         try {
-            val value = evaluate(expression)
-            println(stringify(value))
+            statements.forEach { statement ->
+                execute(statement)
+            }
         } catch (error: RuntimeError) {
             Error.report(error)
         }
     }
+
+    /// ----- Stmt.Visitor -----
+
+    override fun visitPrintStmt(stmt: Stmt.Print) {
+        val value = evaluate(stmt.expression)
+        println(stringify(value))
+    }
+
+    override fun visitExpressionStmt(stmt: Stmt.Expression) {
+        evaluate(stmt.expression)
+    }
+
+    private fun execute(statement: Stmt) {
+        statement.accept(this)
+    }
+
+    /// ----- Expr.Visitor -----
 
     override fun visitBinaryExpr(expr: Expr.Binary): Any? {
         val left = evaluate(expr.left)
