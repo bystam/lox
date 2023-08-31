@@ -6,8 +6,10 @@ sealed interface Stmt {
     interface Visitor<R> {
         fun visitBlockStmt(stmt: Block): R
         fun visitExpressionStmt(stmt: Expression): R
+        fun visitFunctionStmt(stmt: Function): R
         fun visitIfStmt(stmt: If): R
         fun visitPrintStmt(stmt: Print): R
+        fun visitReturnStmt(stmt: Return): R
         fun visitVarStmt(stmt: Var): R
         fun visitWhileStmt(stmt: While): R
     }
@@ -26,6 +28,14 @@ sealed interface Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitExpressionStmt(this)
     }
 
+    data class Function(
+        val name: Token,
+        val params: List<Token>,
+        val body: List<Stmt>,
+    ) : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R = visitor.visitFunctionStmt(this)
+    }
+
     data class If(
         val condition: Expr,
         val thenBranch: Stmt,
@@ -38,6 +48,13 @@ sealed interface Stmt {
         val expression: Expr,
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitPrintStmt(this)
+    }
+
+    data class Return(
+        val keyword: Token,
+        val value: Expr?,
+    ) : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R = visitor.visitReturnStmt(this)
     }
 
     data class Var(

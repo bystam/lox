@@ -7,6 +7,9 @@ class AstPrinter : Expr.Visitor<String> {
     override fun visitAssignExpr(expr: Expr.Assign): String = parenthesize("${expr.name.lexeme} =", expr.value)
 
     override fun visitBinaryExpr(expr: Expr.Binary): String = parenthesize(expr.operator.lexeme, expr.left, expr.right)
+    override fun visitCallExpr(expr: Expr.Call): String {
+        TODO("Not yet implemented")
+    }
 
     override fun visitGroupingExpr(expr: Expr.Grouping): String = parenthesize("group", expr.expression)
 

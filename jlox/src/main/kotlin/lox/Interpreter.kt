@@ -2,7 +2,12 @@ package lox
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
-    private var environment = Environment()
+    val globals: Environment = Environment()
+    private var environment: Environment = globals
+
+    init {
+        globals.define("clock", NativeCallable.Clock)
+    }
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -17,7 +22,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     /// ----- Stmt.Visitor -----
 
     override fun visitBlockStmt(stmt: Stmt.Block) {
-        executeBlock(stmt.statements)
+        executeBlock(stmt.statements, Environment(this.environment))
     }
 
     override fun visitVarStmt(stmt: Stmt.Var) {
@@ -44,18 +49,28 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         println(stringify(value))
     }
 
+    override fun visitReturnStmt(stmt: Stmt.Return) {
+        val value = stmt.value?.let { evaluate(it) }
+        throw LoxFunction.Return(value)
+    }
+
     override fun visitExpressionStmt(stmt: Stmt.Expression) {
         evaluate(stmt.expression)
+    }
+
+    override fun visitFunctionStmt(stmt: Stmt.Function) {
+        val function = LoxFunction(stmt)
+        environment.define(stmt.name.lexeme, function)
     }
 
     private fun execute(statement: Stmt) {
         statement.accept(this)
     }
 
-    private fun executeBlock(statements: List<Stmt>) {
-        val originalEnvironment = environment
+    fun executeBlock(statements: List<Stmt>, environment: Environment) {
+        val originalEnvironment = this.environment
         try {
-            this.environment = Environment(originalEnvironment)
+            this.environment = environment
             statements.forEach { statement ->
                 execute(statement)
             }
@@ -117,6 +132,19 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
             else -> null
         }
+    }
+
+    override fun visitCallExpr(expr: Expr.Call): Any? {
+        val callee = evaluate(expr.callee)
+        val arguments = expr.arguments.map { evaluate(it) }
+        if (callee !is LoxCallable) {
+            throw RuntimeError(expr.paren, "Can only call functions and classes.")
+        }
+        val function = callee
+        if (arguments.size != function.arity) {
+            throw RuntimeError(expr.paren, "Expected ${function.arity} arguments but got ${arguments.size}.")
+        }
+        return function.call(this, arguments)
     }
 
     override fun visitGroupingExpr(expr: Expr.Grouping): Any? {
