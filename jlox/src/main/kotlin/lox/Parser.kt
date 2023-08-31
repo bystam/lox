@@ -1,5 +1,7 @@
 package lox
 
+import kotlin.math.exp
+
 class Parser(
     private val tokens: List<Token>
 ) {
@@ -36,16 +38,62 @@ class Parser(
     }
 
     // statement      → exprStmt
+    //                | forStmt
     //                | ifStmt
     //                | printStmt
+    //                | whileStmt
     //                | block;
     private fun statement(): Stmt {
         return when {
+            match(TokenType.FOR) -> forStatement()
             match(TokenType.IF) -> ifStatement()
             match(TokenType.PRINT) -> printStatement()
+            match(TokenType.WHILE) -> whileStatement()
             match(TokenType.LEFT_BRACE) -> block()
             else -> expressionStatement()
         }
+    }
+
+    // forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+    //                   expression? ";"
+    //                   expression? ")" statement ;
+    private fun forStatement(): Stmt {
+        consume(TokenType.LEFT_PAREN, "Expected '(' after if.")
+
+        val initializer: Stmt? = when {
+            match(TokenType.SEMICOLON) -> null
+            match(TokenType.VAR) -> varDecl()
+            else -> expressionStatement()
+        }
+
+        val condition: Expr? = when {
+            check(TokenType.SEMICOLON) -> null
+            else -> expression()
+        }
+        consume(TokenType.SEMICOLON, "Expected ';' after loop condition")
+
+        val increment = when {
+            check(TokenType.RIGHT_PAREN) -> null
+            else -> expression()
+        }
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after for clauses")
+
+        // Desugar for-loop into a while-loop
+        var body = statement()
+        increment?.let {
+            // attach increment at end of loop body
+            body = Stmt.Block(listOf(body, Stmt.Expression(it)))
+        }
+        // turn it into a while loop, with default 'always true' condition
+        body = Stmt.While(
+            condition = condition ?: Expr.Literal(true),
+            body = body
+        )
+        // if there's an initializer, prepend it
+        initializer?.let {
+            body = Stmt.Block(listOf(it, body))
+        }
+        return body
     }
 
     // ifStmt         → "if" "(" expression ")" statement
@@ -59,6 +107,16 @@ class Parser(
         var elseBranch: Stmt? = if (match(TokenType.ELSE)) statement() else null
 
         return Stmt.If(condition, thenBranch, elseBranch)
+    }
+
+    // whileStmt      → "while" "(" expression ")" statement ;
+    private fun whileStatement(): Stmt {
+        consume(TokenType.LEFT_PAREN, "Expected '(' after while.")
+        val condition = expression()
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after while condition.")
+
+        val body = statement()
+        return Stmt.While(condition, body)
     }
 
     // block          → "{" declaration* "}" ;
