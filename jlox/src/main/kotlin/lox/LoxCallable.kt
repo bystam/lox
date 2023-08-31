@@ -15,13 +15,14 @@ sealed class NativeCallable : LoxCallable {
 }
 
 class LoxFunction(
-    private val declaration: Stmt.Function
+    private val declaration: Stmt.Function,
+    private val closure: Environment
 ) : LoxCallable {
 
     override val arity: Int = declaration.params.size
 
     override fun call(interpreter: Interpreter, arguments: List<Any?>): Any? {
-        val environment = Environment(interpreter.globals)
+        val environment = Environment(closure)
         declaration.params.zip(arguments).forEach { (param, arg) ->
             environment.define(param.lexeme, arg)
         }

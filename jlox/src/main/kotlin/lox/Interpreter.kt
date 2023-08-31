@@ -1,8 +1,10 @@
 package lox
 
-class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+class Interpreter(
+    private val printlnFunction: (String) -> Unit = ::println
+) : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
-    val globals: Environment = Environment()
+    private val globals: Environment = Environment()
     private var environment: Environment = globals
 
     init {
@@ -46,7 +48,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     override fun visitPrintStmt(stmt: Stmt.Print) {
         val value = evaluate(stmt.expression)
-        println(stringify(value))
+        printlnFunction(stringify(value))
     }
 
     override fun visitReturnStmt(stmt: Stmt.Return) {
@@ -59,7 +61,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     override fun visitFunctionStmt(stmt: Stmt.Function) {
-        val function = LoxFunction(stmt)
+        val function = LoxFunction(stmt, environment)
         environment.define(stmt.name.lexeme, function)
     }
 
