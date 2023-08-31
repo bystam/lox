@@ -2,6 +2,8 @@ package lox
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
+    private val environment = Environment()
+
     fun interpret(statements: List<Stmt>) {
         try {
             statements.forEach { statement ->
@@ -13,6 +15,11 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     /// ----- Stmt.Visitor -----
+
+    override fun visitVarStmt(stmt: Stmt.Var) {
+        val initialValue = stmt.initializer?.let { evaluate(it) }
+        environment.define(stmt.name.lexeme, initialValue)
+    }
 
     override fun visitPrintStmt(stmt: Stmt.Print) {
         val value = evaluate(stmt.expression)
@@ -28,6 +35,12 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     /// ----- Expr.Visitor -----
+
+    override fun visitAssignExpr(expr: Expr.Assign): Any? {
+        val value = evaluate(expr.value)
+        environment.assign(expr.name, value)
+        return value
+    }
 
     override fun visitBinaryExpr(expr: Expr.Binary): Any? {
         val left = evaluate(expr.left)
@@ -89,6 +102,10 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             TokenType.BANG -> isTruthy(right)
             else -> TODO("WTF")
         }
+    }
+
+    override fun visitVariableExpr(expr: Expr.Variable): Any? {
+        return environment.get(expr.name)
     }
 
     private fun isTruthy(value: Any?): Boolean = value == null || value == false

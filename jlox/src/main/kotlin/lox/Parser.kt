@@ -8,9 +8,31 @@ class Parser(
     fun parse(): List<Stmt> {
         val statements = mutableListOf<Stmt>()
         while (!isAtEnd()) {
-            statements += statement()
+            declaration()?.let { statements += it }
         }
         return statements
+    }
+
+    // declaration    → varDecl
+    //                | statement ;
+    private fun declaration(): Stmt? {
+        return try {
+            if (match(TokenType.VAR)) varDecl() else statement()
+        } catch (e: ParseError) {
+            synchronize()
+            null
+        }
+    }
+
+    // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+    private fun varDecl(): Stmt {
+        val name = consume(TokenType.IDENTIFIER, "Expected variable name")
+        var initializer: Expr? = null
+        if (match(TokenType.EQUAL)) {
+            initializer = expression()
+        }
+        consume(TokenType.SEMICOLON, "Expected ';' after declaration.")
+        return Stmt.Var(name, initializer)
     }
 
     // statement      → exprStmt
@@ -36,8 +58,24 @@ class Parser(
         return Stmt.Expression(expr)
     }
 
-    // expression     → equality ;
-    private fun expression(): Expr = equality()
+    // expression     → assignment ;
+    private fun expression(): Expr = assignment()
+
+    // assignment     → IDENTIFIER "=" assignment
+    //                | equality ;
+    private fun assignment(): Expr {
+        val expr = equality()
+        if (match(TokenType.EQUAL)) {
+            val token = previous()
+            val value = assignment()
+            if (expr is Expr.Variable) { // was an l-value, not an r-value
+                return Expr.Assign(token, value)
+            }
+
+            error(token, "Invalid assignment target.")
+        }
+        return expr
+    }
 
     // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     private fun equality(): Expr {
@@ -96,10 +134,10 @@ class Parser(
         return primary()
     }
 
-    // primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+    // primary        → "true" | "false" | "nil" | NUMBER | STRING | "(" expression ")" | IDENTIFIER;
     private fun primary(): Expr {
-        if (match(TokenType.FALSE)) return Expr.Literal(false)
         if (match(TokenType.TRUE)) return Expr.Literal(true)
+        if (match(TokenType.FALSE)) return Expr.Literal(false)
         if (match(TokenType.NIL)) return Expr.Literal(null)
 
         if (match(TokenType.NUMBER, TokenType.STRING)) {
@@ -110,6 +148,10 @@ class Parser(
             val expr = expression()
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return Expr.Grouping(expr)
+        }
+
+        if (match(TokenType.IDENTIFIER)) {
+            return Expr.Variable(previous())
         }
 
         throw error(peek(), "Expect expression.")
