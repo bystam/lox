@@ -11,7 +11,7 @@ class LoxClass(
     }
 
     override fun call(interpreter: Interpreter, arguments: List<Any?>): Any? {
-        val instance = LoxInstance(this)
+        val instance = LoxObject(this)
         findMethod("init")?.let { initializer ->
             initializer.bind(instance).call(interpreter, arguments)
         }

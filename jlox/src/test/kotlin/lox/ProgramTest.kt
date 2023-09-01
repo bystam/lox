@@ -1,17 +1,8 @@
 package lox
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class ProgramTest {
-
-    private val printedLines = mutableListOf<String>()
-
-    @BeforeEach
-    fun setUp() {
-        printedLines.clear()
-    }
+class ProgramTest : BaseTest() {
 
     @Test
     fun `recursive fibonacci`() {
@@ -132,24 +123,5 @@ class ProgramTest {
         """.trimIndent())
 
         assertPrintedLines("Eat me!", "Tasty Fries")
-    }
-
-    private fun executeLox(script: String) {
-        val scanner = Scanner(script)
-        val tokens = scanner.scanTokens()
-        val parser = Parser(tokens)
-        val statements = parser.parse()
-
-        val interpreter = Interpreter(
-            printlnFunction = { printedLines += it }
-        )
-        val resolver = Resolver(interpreter)
-        resolver.resolve(statements)
-
-        interpreter.interpret(statements)
-    }
-
-    private fun assertPrintedLines(vararg lines: String) {
-        assertEquals(listOf(*lines), printedLines)
     }
 }

@@ -10,6 +10,7 @@ class Interpreter(
 
     init {
         globals.define("clock", NativeCallable.Clock)
+        globals.define("builtin_array", NativeCallable.Array)
     }
 
     fun interpret(statements: List<Stmt>) {
@@ -183,11 +184,10 @@ class Interpreter(
         if (callee !is LoxCallable) {
             throw RuntimeError(expr.paren, "Can only call functions and classes.")
         }
-        val function = callee
-        if (arguments.size != function.arity) {
-            throw RuntimeError(expr.paren, "Expected ${function.arity} arguments but got ${arguments.size}.")
+        if (arguments.size != callee.arity) {
+            throw RuntimeError(expr.paren, "Expected ${callee.arity} arguments but got ${arguments.size}.")
         }
-        return function.call(this, arguments)
+        return callee.call(this, arguments)
     }
 
     override fun visitGetExpr(expr: Expr.Get): Any? {
@@ -218,7 +218,7 @@ class Interpreter(
     override fun visitSetExpr(expr: Expr.Set): Any? {
         val obj = evaluate(expr.obj)
 
-        if (obj !is LoxInstance) {
+        if (obj !is LoxObject) {
             throw RuntimeError(expr.name, "Only instances have fields.")
         }
 
@@ -230,7 +230,7 @@ class Interpreter(
     override fun visitSuperExpr(expr: Expr.Super): Any? {
         val distance = locals[expr]!!
         val superclass = environment.getAt(distance, "super") as LoxClass
-        val obj = environment.getAt(distance - 1, "this") as LoxInstance
+        val obj = environment.getAt(distance - 1, "this") as LoxObject
         return superclass.findMethod(expr.method.lexeme)!!.bind(obj)
     }
 

@@ -12,6 +12,15 @@ sealed class NativeCallable : LoxCallable {
         override val arity: Int = 0
         override fun call(interpreter: Interpreter, arguments: List<Any?>): Any = System.currentTimeMillis().toDouble() / 1000.0
     }
+
+    object Array : NativeCallable() {
+        override val arity: Int = 1
+
+        override fun call(interpreter: Interpreter, arguments: List<Any?>): Any {
+            val length = arguments.single() as? Double ?: TODO("Handle goodly")
+            return BuiltinArray(arrayOfNulls(length.toInt()))
+        }
+    }
 }
 
 class LoxFunction(
@@ -46,7 +55,7 @@ class LoxFunction(
 
     override fun toString(): String = "<fn ${declaration.name.lexeme}>"
 
-    fun bind(instance: LoxInstance): LoxFunction {
+    fun bind(instance: LoxObject): LoxFunction {
         val environment = Environment(closure)
         environment.define("this", instance)
         return LoxFunction(declaration, environment, isInitializer)
