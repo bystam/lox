@@ -79,6 +79,24 @@ class ProgramTest {
         assertPrintedLines("Crunch crunch crunch!")
     }
 
+    @Test
+    fun `handle this`() {
+        executeLox("""
+            class Cake {
+              taste() {
+                var adjective = "delicious";
+                print "The " + this.flavor + " cake is " + adjective + "!";
+              }
+            }
+            
+            var cake = Cake();
+            cake.flavor = "German chocolate";
+            cake.taste(); // Prints "The German chocolate cake is delicious!".
+        """.trimIndent())
+
+        assertPrintedLines("The German chocolate cake is delicious!")
+    }
+
     private fun executeLox(script: String) {
         val scanner = Scanner(script)
         val tokens = scanner.scanTokens()

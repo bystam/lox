@@ -333,7 +333,7 @@ class Parser(
         return expr
     }
 
-    // primary        → "true" | "false" | "nil" | NUMBER | STRING | "(" expression ")" | IDENTIFIER;
+    // primary        → "true" | "false" | "nil" | NUMBER | STRING | "(" expression ")" | "this" | IDENTIFIER;
     private fun primary(): Expr {
         if (match(TokenType.TRUE)) return Expr.Literal(true)
         if (match(TokenType.FALSE)) return Expr.Literal(false)
@@ -347,6 +347,10 @@ class Parser(
             val expr = expression()
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return Expr.Grouping(expr)
+        }
+
+        if (match(TokenType.THIS)) {
+            return Expr.This(previous())
         }
 
         if (match(TokenType.IDENTIFIER)) {

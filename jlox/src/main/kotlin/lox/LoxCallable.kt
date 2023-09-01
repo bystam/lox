@@ -16,7 +16,8 @@ sealed class NativeCallable : LoxCallable {
 
 class LoxFunction(
     private val declaration: Stmt.Function,
-    private val closure: Environment
+    private val closure: Environment,
+    private val isInitializer: Boolean
 ) : LoxCallable {
 
     override val arity: Int = declaration.params.size
@@ -29,13 +30,27 @@ class LoxFunction(
 
         return try {
             interpreter.executeBlock(declaration.body, environment)
-            null // implicit nil return
-        } catch (r: Return) {
-            r.value // explicit return
+
+            // implicit return
+            if (isInitializer)
+                closure.getAt(0, "this") // init always returns this
+            else
+                null // implicit nil return when not declared in function
+        } catch (r: Return) {  // explicit return
+            if (isInitializer)
+                closure.getAt(0, "this") // init always returns this
+            else
+                r.value
         }
     }
 
     override fun toString(): String = "<fn ${declaration.name.lexeme}>"
+
+    fun bind(instance: LoxInstance): LoxFunction {
+        val environment = Environment(closure)
+        environment.define("this", instance)
+        return LoxFunction(declaration, environment, isInitializer)
+    }
 
     class Return(val value: Any?) : RuntimeException(null, null, false, false)
 }

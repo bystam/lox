@@ -16,6 +16,7 @@ class Resolver(
 
     private val scopes: MutableList<MutableMap<String, Boolean>> = mutableListOf()
     private var currentFunction: FunctionType = FunctionType.NONE
+    private var currentClass: ClassType = ClassType.NONE
 
     fun resolve(statements: List<Stmt>) = statements.forEach { resolve(it) }
 
@@ -26,13 +27,23 @@ class Resolver(
     }
 
     override fun visitClassStmt(stmt: Stmt.Class) {
+        val enclosingClass = this.currentClass
+        this.currentClass = ClassType.CLASS
         declare(stmt.name)
+        define(stmt.name)
 
+        beginScope()
+        scopes.last()["this"] = true
         stmt.methods.forEach { method ->
-            resolveFunction(method, FunctionType.METHOD)
+            var type = FunctionType.METHOD
+            if (method.name.lexeme == "init") {
+                type = FunctionType.INITIALIZER
+            }
+            resolveFunction(method, type)
         }
 
-        define(stmt.name)
+        endScope()
+        this.currentClass = enclosingClass
     }
 
     override fun visitVarStmt(stmt: Stmt.Var) {
@@ -75,7 +86,12 @@ class Resolver(
         if (currentFunction == FunctionType.NONE) {
             Error.report(stmt.keyword, "Can't return from top-level code.")
         }
-        stmt.value?.let { resolve(it) }
+        stmt.value?.let { value ->
+            if (currentFunction == FunctionType.INITIALIZER) {
+                Error.report(stmt.keyword, "Can't return from an initializer.")
+            }
+            resolve(value)
+        }
     }
 
     override fun visitWhileStmt(stmt: Stmt.While) {
@@ -112,6 +128,13 @@ class Resolver(
     override fun visitSetExpr(expr: Expr.Set) {
         resolve(expr.value)
         resolve(expr.obj)
+    }
+
+    override fun visitThisExpr(expr: Expr.This) {
+        if (currentClass == ClassType.NONE) {
+            Error.report(expr.keyword, "Can't use 'this' outside of a class")
+        }
+        resolveLocal(expr, expr.keyword)
     }
 
     override fun visitUnaryExpr(expr: Expr.Unary) {
@@ -170,6 +193,10 @@ class Resolver(
     }
 
     private enum class FunctionType {
-        NONE, FUNCTION, METHOD
+        NONE, FUNCTION, INITIALIZER, METHOD
+    }
+
+    private enum class ClassType {
+        NONE, CLASS
     }
 }

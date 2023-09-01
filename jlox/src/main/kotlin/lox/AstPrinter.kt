@@ -24,6 +24,10 @@ class AstPrinter : Expr.Visitor<String> {
         TODO("Not yet implemented")
     }
 
+    override fun visitThisExpr(expr: Expr.This): String {
+        TODO("Not yet implemented")
+    }
+
     override fun visitUnaryExpr(expr: Expr.Unary): String = parenthesize(expr.operator.lexeme, expr.right)
     override fun visitVariableExpr(expr: Expr.Variable): String = expr.name.lexeme
 
