@@ -69,7 +69,7 @@ object GenerateAst {
         fieldList: String
     ) {
         writer.println(
-            "    data class $className("
+            "    class $className("
         )
 
         // Store parameters in fields.

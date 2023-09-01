@@ -16,19 +16,19 @@ sealed interface Stmt {
 
     fun <R> accept(visitor: Visitor<R>): R
 
-    data class Block(
+    class Block(
         val statements: List<Stmt>,
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitBlockStmt(this)
     }
 
-    data class Expression(
+    class Expression(
         val expression: Expr,
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitExpressionStmt(this)
     }
 
-    data class Function(
+    class Function(
         val name: Token,
         val params: List<Token>,
         val body: List<Stmt>,
@@ -36,7 +36,7 @@ sealed interface Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitFunctionStmt(this)
     }
 
-    data class If(
+    class If(
         val condition: Expr,
         val thenBranch: Stmt,
         val elseBranch: Stmt?,
@@ -44,27 +44,27 @@ sealed interface Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitIfStmt(this)
     }
 
-    data class Print(
+    class Print(
         val expression: Expr,
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitPrintStmt(this)
     }
 
-    data class Return(
+    class Return(
         val keyword: Token,
         val value: Expr?,
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitReturnStmt(this)
     }
 
-    data class Var(
+    class Var(
         val name: Token,
         val initializer: Expr?,
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R = visitor.visitVarStmt(this)
     }
 
-    data class While(
+    class While(
         val condition: Expr,
         val body: Stmt,
     ) : Stmt {

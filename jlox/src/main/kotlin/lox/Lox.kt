@@ -52,6 +52,11 @@ object Lox {
 
         if (Error.hadError) return
 
+        val resolver = Resolver(interpreter)
+        resolver.resolve(statements)
+
+        if (Error.hadError) return
+
         interpreter.interpret(statements)
     }
 }

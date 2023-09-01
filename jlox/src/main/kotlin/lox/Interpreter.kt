@@ -6,6 +6,7 @@ class Interpreter(
 
     private val globals: Environment = Environment()
     private var environment: Environment = globals
+    private val locals: MutableMap<Expr, Int> = mutableMapOf()
 
     init {
         globals.define("clock", NativeCallable.Clock)
@@ -19,6 +20,10 @@ class Interpreter(
         } catch (error: RuntimeError) {
             Error.report(error)
         }
+    }
+
+    fun resolve(expr: Expr, depth: Int) {
+        locals[expr] = depth
     }
 
     /// ----- Stmt.Visitor -----
@@ -85,7 +90,12 @@ class Interpreter(
 
     override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)
-        environment.assign(expr.name, value)
+        val distance = locals[expr.value]
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value)
+        } else {
+            globals.assign(expr.name, value)
+        }
         return value
     }
 
@@ -176,13 +186,22 @@ class Interpreter(
     }
 
     override fun visitVariableExpr(expr: Expr.Variable): Any? {
-        return environment.get(expr.name)
+        return lookUpVariable(expr.name, expr)
     }
 
     private fun isTruthy(value: Any?): Boolean {
         if (value == null) return false
         if (value is Boolean) return value
         return true
+    }
+
+    private fun lookUpVariable(name: Token, expr: Expr): Any? {
+        val distance = locals[expr]
+        return if (distance != null) {
+            environment.getAt(distance, name.lexeme)
+        } else {
+            globals.get(name)
+        }
     }
 
     private fun evaluate(expr: Expr): Any? {
