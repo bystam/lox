@@ -124,7 +124,6 @@ class Resolver(
     private fun resolve(stmt: Stmt) = stmt.accept(this)
     private fun resolve(expr: Expr) = expr.accept(this)
     private fun resolveLocal(expr: Expr, name: Token) {
-// wtf
         scopes.indices.reversed().forEach { i ->
             if (scopes[i].containsKey(name.lexeme)) {
                 interpreter.resolve(expr, scopes.size - 1 - i)

@@ -1,6 +1,5 @@
 package lox
 
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -89,6 +88,9 @@ class ProgramTest {
         val interpreter = Interpreter(
             printlnFunction = { printedLines += it }
         )
+        val resolver = Resolver(interpreter)
+        resolver.resolve(statements)
+
         interpreter.interpret(statements)
     }
 
