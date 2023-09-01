@@ -25,6 +25,16 @@ class Resolver(
         endScope()
     }
 
+    override fun visitClassStmt(stmt: Stmt.Class) {
+        declare(stmt.name)
+
+        stmt.methods.forEach { method ->
+            resolveFunction(method, FunctionType.METHOD)
+        }
+
+        define(stmt.name)
+    }
+
     override fun visitVarStmt(stmt: Stmt.Var) {
         declare(stmt.name)
         stmt.initializer?.let { resolve(it) }
@@ -51,7 +61,7 @@ class Resolver(
         resolveFunction(stmt, FunctionType.FUNCTION)
     }
 
-// --- BORING ONES ----
+    // --- BORING ONES ----
 
     override fun visitExpressionStmt(stmt: Stmt.Expression) = resolve(stmt.expression)
     override fun visitIfStmt(stmt: Stmt.If) {
@@ -83,6 +93,10 @@ class Resolver(
         expr.arguments.forEach { resolve(it) }
     }
 
+    override fun visitGetExpr(expr: Expr.Get) {
+        resolve(expr.obj)
+    }
+
     override fun visitGroupingExpr(expr: Expr.Grouping) {
         resolve(expr.expression)
     }
@@ -95,11 +109,16 @@ class Resolver(
         resolve(expr.right)
     }
 
+    override fun visitSetExpr(expr: Expr.Set) {
+        resolve(expr.value)
+        resolve(expr.obj)
+    }
+
     override fun visitUnaryExpr(expr: Expr.Unary) {
         resolve(expr.right)
     }
 
-// --- BORING ONES END ----
+    // --- BORING ONES END ----
 
 
     private fun resolve(stmt: Stmt) = stmt.accept(this)
@@ -152,6 +171,6 @@ class Resolver(
     }
 
     private enum class FunctionType {
-        NONE, FUNCTION
+        NONE, FUNCTION, METHOD
     }
 }

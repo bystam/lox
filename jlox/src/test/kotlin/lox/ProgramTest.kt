@@ -50,6 +50,36 @@ class ProgramTest {
         assertPrintedLines("1", "2")
     }
 
+    @Test
+    fun `parse class`() {
+        executeLox("""
+            class DevonshireCream {
+              serveOn() {
+                return "Scones";
+              }
+            }
+
+            print DevonshireCream; // Prints "DevonshireCream".
+        """.trimIndent())
+
+        assertPrintedLines("<class DevonshireCream>")
+    }
+
+    @Test
+    fun `run method`() {
+        executeLox("""
+            class Bacon {
+              eat() {
+                print "Crunch crunch crunch!";
+              }
+            }
+
+            Bacon().eat(); // Prints "Crunch crunch crunch!".
+        """.trimIndent())
+
+        assertPrintedLines("Crunch crunch crunch!")
+    }
+
     private fun executeLox(script: String) {
         val scanner = Scanner(script)
         val tokens = scanner.scanTokens()

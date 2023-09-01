@@ -14,15 +14,18 @@ object GenerateAst {
             "Assign   : Token name, Expr value",
             "Binary   : Expr left, Token operator, Expr right",
             "Call     : Expr callee, Token paren, List<Expr> arguments",
+            "Get      : Expr obj, Token name",
             "Grouping : Expr expression",
             "Literal  : Any? value",
             "Logical  : Expr left, Token operator, Expr right",
+            "Set      : Expr obj, Token name, Expr value",
             "Unary    : Token operator, Expr right",
             "Variable : Token name",
         ))
 
         defineAst(outputDir, "Stmt", listOf(
             "Block      : List<Stmt> statements",
+            "Class      : Token name, List<Function> methods",
             "Expression : Expr expression",
             "Function   : Token name, List<Token> params, List<Stmt> body",
             "If         : Expr condition, Stmt thenBranch, Stmt? elseBranch",

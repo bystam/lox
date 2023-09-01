@@ -1,7 +1,5 @@
 package lox
 
-import kotlin.math.exp
-
 class Parser(
     private val tokens: List<Token>
 ) {
@@ -15,12 +13,14 @@ class Parser(
         return statements
     }
 
-    // declaration    → funDecl
+    // declaration    → classDecl
+    //                | funDecl
     //                | varDecl
     //                | statement ;
     private fun declaration(): Stmt? {
         return try {
             when {
+                match(TokenType.CLASS) -> classDeclaration()
                 match(TokenType.FUN) -> function("function")
                 match(TokenType.VAR) -> varDeclaration()
                 else -> statement()
@@ -31,10 +31,24 @@ class Parser(
         }
     }
 
+    // classDecl      → "class" IDENTIFIER "{" function* "}" ;
+    private fun classDeclaration(): Stmt {
+        val name = consume(TokenType.IDENTIFIER, "Expected class name.")
+        consume(TokenType.LEFT_BRACE, "Expected '{' after class name.")
+
+        val methods = mutableListOf<Stmt.Function>()
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            methods += function("method")
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.")
+        return Stmt.Class(name, methods)
+    }
+
     // funDecl        → "fun" function ;
     // function       → IDENTIFIER "(" parameters? ")" block ;
     // parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
-    private fun function(kind: String): Stmt {
+    private fun function(kind: String): Stmt.Function {
         val name = consume(TokenType.IDENTIFIER, "Expected $kind name.")
 
         // parameters
@@ -190,7 +204,7 @@ class Parser(
     // expression     → assignment ;
     private fun expression(): Expr = assignment()
 
-    // assignment     → IDENTIFIER "=" assignment
+    // assignment     → ( call "." )? IDENTIFIER "=" assignment
     //                | logic_or ;
     private fun assignment(): Expr {
         val expr = or()
@@ -199,6 +213,8 @@ class Parser(
             val value = assignment()
             if (expr is Expr.Variable) { // was an l-value, not an r-value
                 return Expr.Assign(expr.name, value)
+            } else if (expr is Expr.Get) {
+                return Expr.Set(expr.obj, expr.name, value)
             }
 
             error(equals, "Invalid assignment target.")
@@ -284,7 +300,7 @@ class Parser(
         return call()
     }
 
-    // call           → primary ( "(" arguments? ")" )* ;
+    // call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
     // arguments      → expression ( "," expression )* ;
     private fun call(): Expr {
 
@@ -304,8 +320,15 @@ class Parser(
         }
 
         var expr = primary()
-        while (match(TokenType.LEFT_PAREN)) {
-            expr = finishCall(expr)
+        while (true) {
+            expr = when {
+                match(TokenType.LEFT_PAREN) -> finishCall(expr)
+                match(TokenType.DOT) -> Expr.Get(
+                    obj = expr,
+                    name = consume(TokenType.IDENTIFIER, "Expected property name after '.'.")
+                )
+                else -> break
+            }
         }
         return expr
     }
