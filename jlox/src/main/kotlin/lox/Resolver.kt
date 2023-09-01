@@ -36,6 +36,7 @@ class Resolver(
             if (superclass.name.lexeme == stmt.name.lexeme) {
                 Error.report(superclass.name, "A class can't inherit from itself.")
             }
+            this.currentClass = ClassType.SUBCLASS
             resolve(superclass)
         }
 
@@ -148,6 +149,11 @@ class Resolver(
     }
 
     override fun visitSuperExpr(expr: Expr.Super) {
+        when (currentClass) {
+            ClassType.NONE -> Error.report(expr.keyword, "Can't use 'super' outside of a class.")
+            ClassType.CLASS -> Error.report(expr.keyword, "Can't use 'super' without a superclass.")
+            else -> {}
+        }
         resolveLocal(expr, expr.keyword)
     }
 
@@ -218,6 +224,6 @@ class Resolver(
     }
 
     private enum class ClassType {
-        NONE, CLASS
+        NONE, CLASS, SUBCLASS
     }
 }
