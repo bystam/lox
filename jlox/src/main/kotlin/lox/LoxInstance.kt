@@ -14,7 +14,7 @@ class BuiltinArray(
     override fun toString(): String = "<native array>"
 
     override fun get(name: Token): Any? = when (name.lexeme) {
-        "length" -> array.size
+        "length" -> array.size.toDouble()
         "get" -> object : LoxCallable {
             override val arity: Int = 1
             override fun call(interpreter: Interpreter, arguments: List<Any?>): Any? {

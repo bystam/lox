@@ -22,4 +22,33 @@ class StdlibTest : BaseTest() {
             "Hey!"
         )
     }
+
+    @Test
+    fun `high level array`() {
+        executeLox("""
+            var arr = Array();
+            print arr.length;
+            
+            arr.add("Hey!");
+            print arr.length;
+            
+            arr.removeLast();
+            print arr.length;
+        """.trimIndent())
+        assertPrintedLines("0", "1", "0")
+    }
+
+    @Test
+    fun `large high level array`() {
+        executeLox("""
+            var arr = Array();
+            
+            for (var i = 0; i < 100; i = i + 1) {
+              arr.add("woop");
+            }
+            
+            print arr.length;
+        """.trimIndent())
+        assertPrintedLines("100")
+    }
 }

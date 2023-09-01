@@ -13,9 +13,9 @@ object Error {
 
     fun report(token: Token, message: String) {
         if (token.type === TokenType.EOF) {
-            report(token.line, " at end", message)
+            report(token.line, message, " at end")
         } else {
-            report(token.line, " at '" + token.lexeme + "'", message)
+            report(token.line, message, " at '" + token.lexeme + "'")
         }
     }
 

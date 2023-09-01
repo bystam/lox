@@ -2,6 +2,7 @@ package lox
 
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import java.lang.Exception
 
 abstract class BaseTest {
 
@@ -13,7 +14,8 @@ abstract class BaseTest {
     }
 
     protected fun executeLox(script: String) {
-        val scanner = Scanner(script)
+        val entireScript = Stdlib + script;
+        val scanner = Scanner(entireScript)
         val tokens = scanner.scanTokens()
         val parser = Parser(tokens)
         val statements = parser.parse()
@@ -24,7 +26,15 @@ abstract class BaseTest {
         val resolver = Resolver(interpreter)
         resolver.resolve(statements)
 
-        interpreter.interpret(statements)
+        try {
+            interpreter.interpret(statements)
+        } catch (e: Exception) {
+            println("Prints:")
+            printedLines.forEach {
+                println("  $it")
+            }
+            throw e
+        }
     }
 
     protected fun assertPrintedLines(vararg lines: String) {
