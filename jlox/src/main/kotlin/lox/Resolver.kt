@@ -32,6 +32,18 @@ class Resolver(
         declare(stmt.name)
         define(stmt.name)
 
+        stmt.superclass?.let { superclass ->
+            if (superclass.name.lexeme == stmt.name.lexeme) {
+                Error.report(superclass.name, "A class can't inherit from itself.")
+            }
+            resolve(superclass)
+        }
+
+        stmt.superclass?.let {
+            beginScope()
+            scopes.last()["super"] = true
+        }
+
         beginScope()
         scopes.last()["this"] = true
         stmt.methods.forEach { method ->
@@ -43,6 +55,11 @@ class Resolver(
         }
 
         endScope()
+
+        stmt.superclass?.let {
+            endScope()
+        }
+
         this.currentClass = enclosingClass
     }
 
@@ -128,6 +145,10 @@ class Resolver(
     override fun visitSetExpr(expr: Expr.Set) {
         resolve(expr.value)
         resolve(expr.obj)
+    }
+
+    override fun visitSuperExpr(expr: Expr.Super) {
+        resolveLocal(expr, expr.keyword)
     }
 
     override fun visitThisExpr(expr: Expr.This) {

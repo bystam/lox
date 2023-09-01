@@ -97,6 +97,43 @@ class ProgramTest {
         assertPrintedLines("The German chocolate cake is delicious!")
     }
 
+
+    @Test
+    fun `handle inheritance`() {
+        executeLox("""
+            class Food {
+              init(name) {
+                this.name = name;
+              }
+              
+              operation() {
+                return "Eat me!";
+              }
+              
+              toString() {
+                return this.name;
+              }
+            }
+            
+            class DescribedFood < Food {
+              init(name, description) {
+                super.init(name);
+                this.description = description;
+              }
+              
+              toString() {
+                return this.description + " " + super.toString();
+              }
+            }
+            
+            var fries = DescribedFood("Fries", "Tasty");
+            print fries.operation();
+            print fries.toString();
+        """.trimIndent())
+
+        assertPrintedLines("Eat me!", "Tasty Fries")
+    }
+
     private fun executeLox(script: String) {
         val scanner = Scanner(script)
         val tokens = scanner.scanTokens()

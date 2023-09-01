@@ -2,6 +2,7 @@ package lox
 
 class LoxClass(
     val name: String,
+    val superclass: LoxClass?,
     val methods: MutableMap<String, LoxFunction>
 ) : LoxCallable {
 
@@ -17,7 +18,7 @@ class LoxClass(
         return instance
     }
 
-    fun findMethod(name: String): LoxFunction? = methods[name]
+    fun findMethod(name: String): LoxFunction? = methods[name] ?: superclass?.findMethod(name)
 
     override fun toString(): String = "<class $name>"
 }

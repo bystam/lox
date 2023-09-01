@@ -33,7 +33,20 @@ class Interpreter(
     }
 
     override fun visitClassStmt(stmt: Stmt.Class) {
+        var superclass: LoxClass? = null
+        if (stmt.superclass != null) {
+            superclass = evaluate(stmt.superclass) as? LoxClass
+            if (superclass == null) {
+                throw RuntimeError(stmt.superclass.name, "Superclass must be a class.")
+            }
+        }
+
         environment.define(stmt.name.lexeme, null)
+
+        stmt.superclass?.let {
+            environment = Environment(environment)
+            environment.define("super", superclass)
+        }
 
         val methods = mutableMapOf<String, LoxFunction>()
         stmt.methods.forEach { method ->
@@ -41,7 +54,12 @@ class Interpreter(
             methods[method.name.lexeme] = function
         }
 
-        val cls = LoxClass(stmt.name.lexeme, methods)
+        val cls = LoxClass(stmt.name.lexeme, superclass, methods)
+
+        stmt.superclass?.let {
+            environment = environment.enclosing!!
+        }
+
         environment.assign(stmt.name, cls)
     }
 
@@ -207,6 +225,13 @@ class Interpreter(
         val value = evaluate(expr.value)
         obj.set(expr.name, value)
         return value
+    }
+
+    override fun visitSuperExpr(expr: Expr.Super): Any? {
+        val distance = locals[expr]!!
+        val superclass = environment.getAt(distance, "super") as LoxClass
+        val obj = environment.getAt(distance - 1, "this") as LoxInstance
+        return superclass.findMethod(expr.method.lexeme)!!.bind(obj)
     }
 
     override fun visitThisExpr(expr: Expr.This): Any? {
