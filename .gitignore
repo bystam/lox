@@ -2,7 +2,6 @@
 .sass-cache/
 /build/
 /gen/
-clox
 *.class
 exercises/chapter01_introduction/3/linked_list
 .idea/
@@ -10,6 +9,7 @@ exercises/chapter01_introduction/3/linked_list
 *.iml
 *.ipr
 /out/
+cmake-build-debug/
 
 # I keep a scratch file at the top level to try stuff out.
 temp.lox
