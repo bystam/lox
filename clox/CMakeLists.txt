@@ -10,4 +10,6 @@ add_executable(clox main.c
         memory.h
         memory.c
         debug.c
-        debug.h)
+        debug.h
+        value.c
+        value.h)
