@@ -32,7 +32,7 @@ int Chunk_addConstant(Chunk *chunk, Value value) {
 
 void Chunk_free(Chunk *chunk) {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
-    FREE_ARRAY(int, chunk->lines, chunk->capacity);
+    ValueArray_free(&chunk->constants);
     Chunk_init(chunk);
 }
 
