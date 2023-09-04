@@ -4,6 +4,7 @@
 
 #include "vm.h"
 #include "debug.h"
+#include "compilers.h"
 #include <stdio.h>
 
 VM vm;
@@ -68,10 +69,22 @@ static InterpretResult run() {
 #undef BINARY_OP
 }
 
-InterpretResult VM_interpret(Chunk *chunk) {
-    vm.chunk = chunk;
-    vm.ip = chunk->code;
-    return run();
+InterpretResult VM_interpret(const char *source) {
+    Chunk chunk;
+    Chunk_init(&chunk);
+
+    if (!compile(source, &chunk)) {
+        Chunk_free(&chunk);
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    vm.chunk = &chunk;
+    vm.ip = vm.chunk->code;
+
+    InterpretResult result = run();
+
+    Chunk_free(&chunk);
+    return result;
 }
 
 void VM_stackPush(Value value) {

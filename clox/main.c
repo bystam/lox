@@ -2,16 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include "chunk.h"
 #include "vm.h"
-#include "debug.h"
-#include "compilers.h"
-
-static InterpretResult interpret(const char *source) {
-    compile(source);
-    return INTERPRET_OK;
-}
 
 static char *readFile(const char *path) {
     FILE *file = fopen(path, "rb");
@@ -42,7 +33,7 @@ static char *readFile(const char *path) {
 
 static void runFile(const char *path) {
     char *source = readFile(path);
-    InterpretResult result = interpret(source);
+    InterpretResult result = VM_interpret(source);
     free(source);
 
     if (result == INTERPRET_COMPILE_ERROR) exit(65);
@@ -57,7 +48,7 @@ static void repl() {
             break;
         }
 
-        interpret(line);
+        VM_interpret(line);
     }
 }
 
