@@ -43,6 +43,7 @@ static void runFile(const char *path) {
 static void repl() {
     char line[1024];
     for (;;) {
+        printf("clox> ");
         if (!fgets(line, sizeof(line), stdin)) {
             printf("\n");
             break;

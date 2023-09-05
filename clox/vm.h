@@ -26,7 +26,5 @@ typedef enum {
 void VM_init();
 void VM_free();
 InterpretResult VM_interpret(const char *source);
-void VM_stackPush(Value value);
-Value VM_stackPop();
 
 #endif //CLOX_VM_H

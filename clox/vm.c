@@ -22,6 +22,9 @@ void VM_free() {
 }
 
 static Value peek(int distance);
+static void stackPush(Value value);
+static Value stackPop();
+static bool isFalsy(Value value);
 static void runtimeError(const char* format, ...);
 
 static InterpretResult run() {
@@ -33,9 +36,9 @@ static InterpretResult run() {
             runtimeError("Operands must be numbers.");     \
             return INTERPRET_RUNTIME_ERROR; \
         }  \
-        double b = AS_NUMBER(VM_stackPop()); \
-        double a = AS_NUMBER(VM_stackPop()); \
-        VM_stackPush(valueType(a operator b)); \
+        double b = AS_NUMBER(stackPop()); \
+        double a = AS_NUMBER(stackPop()); \
+        stackPush(valueType(a operator b)); \
     } while(false)
 
     for (;;) {
@@ -53,9 +56,21 @@ static InterpretResult run() {
         switch (instruction = READ_BYTE()) {
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
-                VM_stackPush(constant);
+                stackPush(constant);
                 break;
             }
+            case OP_NIL: stackPush(NIL_VAL); break;
+            case OP_TRUE: stackPush(BOOL_VAL(true)); break;
+            case OP_FALSE: stackPush(BOOL_VAL(false)); break;
+
+            case OP_EQUAL: {
+                Value b = stackPop();
+                Value a = stackPop();
+                stackPush(BOOL_VAL(valuesEqual(a, b)));
+                break;
+            }
+            case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;
+            case OP_GREATER:  BINARY_OP(BOOL_VAL, >); break;
             case OP_ADD:      BINARY_OP(NUMBER_VAL, +); break;
             case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
             case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
@@ -66,11 +81,18 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 
-                VM_stackPush(NUMBER_VAL(-AS_NUMBER(VM_stackPop())));
+                stackPush(NUMBER_VAL(-AS_NUMBER(stackPop())));
                 break;
             }
+
+            case OP_NOT: {
+                Value value = stackPop();
+                stackPush(BOOL_VAL(isFalsy(value)));
+                break;
+            }
+
             case OP_RETURN: {
-                Value_print(VM_stackPop());
+                Value_print(stackPop());
                 printf("\n");
                 return INTERPRET_OK;
             }
@@ -100,16 +122,20 @@ InterpretResult VM_interpret(const char *source) {
     return result;
 }
 
-void VM_stackPush(Value value) {
+static void stackPush(Value value) {
     *(vm.stackTop++) = value;
 }
 
-Value VM_stackPop() {
+static Value stackPop() {
     return *(--vm.stackTop);
 }
 
 static Value peek(int distance) {
     return vm.stackTop[-1 - distance];
+}
+
+static bool isFalsy(Value value) {
+    return IS_NIL(value) || (IS_BOOL(value) && AS_BOOL(value) == false);
 }
 
 static void runtimeError(const char* format, ...) {

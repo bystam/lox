@@ -33,6 +33,7 @@ typedef struct {
 #define IS_NUMBER(value)  ((value).type == VAL_NUMBER)
 
 void Value_print(Value value);
+bool valuesEqual(Value a, Value b);
 
 typedef struct {
     int capacity;
