@@ -5,8 +5,11 @@
 #include "vm.h"
 #include "debug.h"
 #include "compilers.h"
+#include "object.h"
+#include "memory.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 VM vm;
 
@@ -16,15 +19,18 @@ static void resetStack() {
 
 void VM_init() {
     resetStack();
+    vm.objects = NULL;
 }
 
 void VM_free() {
+    freeObjects();
 }
 
 static Value peek(int distance);
 static void stackPush(Value value);
 static Value stackPop();
 static bool isFalsy(Value value);
+static ObjString *concatenate(ObjString *a, ObjString *b);
 static void runtimeError(const char* format, ...);
 
 static InterpretResult run() {
@@ -71,7 +77,21 @@ static InterpretResult run() {
             }
             case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;
             case OP_GREATER:  BINARY_OP(BOOL_VAL, >); break;
-            case OP_ADD:      BINARY_OP(NUMBER_VAL, +); break;
+            case OP_ADD: {
+                if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
+                    ObjString *b = AS_STRING(stackPop());
+                    ObjString *a = AS_STRING(stackPop());
+                    stackPush(OBJ_VAL(concatenate(a, b)));
+                } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+                    double b = AS_NUMBER(stackPop());
+                    double a = AS_NUMBER(stackPop());
+                    stackPush(NUMBER_VAL(a + b));
+                } else {
+                    runtimeError("Operands must be two numbers or two strings.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                break;
+            }
             case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
             case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
             case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
@@ -136,6 +156,15 @@ static Value peek(int distance) {
 
 static bool isFalsy(Value value) {
     return IS_NIL(value) || (IS_BOOL(value) && AS_BOOL(value) == false);
+}
+
+static ObjString *concatenate(ObjString *a, ObjString *b) {
+    int length = a->length + b->length;
+    char *heapChars = ALLOCATE(char, length + 1);
+    memcpy(heapChars, a->chars, a->length);
+    memcpy(heapChars + a->length, b->chars, b->length);
+    heapChars[length] = '\0';
+    return ObjString_takeFrom(heapChars, length);
 }
 
 static void runtimeError(const char* format, ...) {
