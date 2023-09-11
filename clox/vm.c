@@ -113,9 +113,13 @@ static InterpretResult run() {
                 break;
             }
 
-            case OP_RETURN: {
+            case OP_PRINT: {
                 Value_print(stackPop());
                 printf("\n");
+                break;
+            }
+
+            case OP_RETURN: {
                 return INTERPRET_OK;
             }
         }

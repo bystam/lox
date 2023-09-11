@@ -49,9 +49,12 @@ Chunk *compilingChunk;
 
 static void advance();
 static void consume(TokenType type, const char *errorMessage);
+static bool match(TokenType type);
 static void emitByte(uint8_t byte);
 static void endCompiler();
 
+static void statement();
+static void declaration();
 static void expression();
 
 static void errorAt(Token* token, const char* message);
@@ -65,13 +68,20 @@ bool compile(const char *source, Chunk *chunk) {
     parser.panicMode = false;
 
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expected end of expression.");
+
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
+
     endCompiler();
     return !parser.hadError;
 }
 
 // ===== BUILDING BLOCKS =====
+
+static bool check(TokenType type) {
+    return parser.current.type == type;
+}
 
 static void advance() {
     parser.previous = parser.current;
@@ -90,6 +100,12 @@ static void consume(TokenType type, const char *errorMessage) {
         return;
     }
     errorAtCurrent(errorMessage);
+}
+
+static bool match(TokenType type) {
+    if (!check(type)) return false;
+    advance();
+    return true;
 }
 
 static Chunk *currentChunk() {
@@ -234,7 +250,23 @@ static void literal() {
     }
 }
 
-void expression() {
+static void printStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emitByte(OP_PRINT);
+}
+
+static void declaration() {
+    statement();
+}
+
+static void statement() {
+    if (match(TOKEN_PRINT)) {
+        printStatement();
+    }
+}
+
+static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
 }
 
