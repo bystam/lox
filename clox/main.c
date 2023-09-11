@@ -66,6 +66,6 @@ int main(int argc, const char *argv[]) {
     }
 
 
-    VM_free();
+     VM_free();
     return 0;
 }

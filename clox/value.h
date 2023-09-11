@@ -41,7 +41,7 @@ typedef struct {
 #define IS_OBJ(value)  ((value).type == VAL_OBJ)
 
 void Value_print(Value value);
-bool valuesEqual(Value a, Value b);
+bool Value_equal(Value a, Value b);
 
 typedef struct {
     int capacity;

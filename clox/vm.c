@@ -20,9 +20,11 @@ static void resetStack() {
 void VM_init() {
     resetStack();
     vm.objects = NULL;
+    Table_init(&vm.strings);
 }
 
 void VM_free() {
+    Table_free(&vm.strings);
     freeObjects();
 }
 
@@ -72,7 +74,7 @@ static InterpretResult run() {
             case OP_EQUAL: {
                 Value b = stackPop();
                 Value a = stackPop();
-                stackPush(BOOL_VAL(valuesEqual(a, b)));
+                stackPush(BOOL_VAL(Value_equal(a, b)));
                 break;
             }
             case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;

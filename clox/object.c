@@ -14,7 +14,9 @@
     (type *)allocateObject(sizeof(type), objectType)
 
 static Obj *allocateObject(size_t size, ObjType type);
-static ObjString *allocateString(char *chars, int length);
+static ObjString *allocateString(char *chars, int length, uint32_t hash);
+static uint32_t hashString(const char* key, int length);
+
 
 void Obj_print(Value value) {
     switch (OBJ_TYPE(value)) {
@@ -25,20 +27,32 @@ void Obj_print(Value value) {
 }
 
 ObjString *ObjString_takeFrom(char *chars, int length) {
-    return allocateString(chars, length);
+    uint32_t hash = hashString(chars, length);
+    ObjString *interned = Table_findString(&vm.strings, chars, length, hash);
+    if (interned != NULL) {
+        FREE_ARRAY(char, chars, length + 1);
+        return interned;
+    }
+    return allocateString(chars, length, hash);
 }
 
 ObjString *ObjString_copyFrom(const char *chars, int length) {
+    uint32_t hash = hashString(chars, length);
+    ObjString *interned = Table_findString(&vm.strings, chars, length, hash);
+    if (interned != NULL) return interned;
+
     char *heapChars = ALLOCATE(char, length + 1); // +1 to include NULL char
     memcpy(heapChars, chars, length);
     heapChars[length] = '\0';
-    return allocateString(heapChars, length);
+    return allocateString(heapChars, length, hash);
 }
 
-static ObjString *allocateString(char *chars, int length) {
+static ObjString *allocateString(char *chars, int length, uint32_t hash) {
     ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
     string->length = length;
     string->chars = chars;
+    string->hash = hash;
+    Table_set(&vm.strings, string, NIL_VAL);
     return string;
 }
 
@@ -48,4 +62,13 @@ static Obj *allocateObject(size_t size, ObjType type) {
     object->next = vm.objects;
     vm.objects = object;
     return object;
+}
+
+static uint32_t hashString(const char* key, int length) {
+    uint32_t hash = 2166136261u;
+    for (int i = 0; i < length; i++) {
+        hash ^= (uint8_t)key[i];
+        hash *= 16777619;
+    }
+    return hash;
 }
