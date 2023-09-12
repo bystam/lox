@@ -57,6 +57,7 @@ static void statement();
 static void declaration();
 static void expression();
 
+static void synchronize();
 static void errorAt(Token* token, const char* message);
 static void errorAtCurrent(const char* message);
 static void error(const char* message);
@@ -256,13 +257,31 @@ static void printStatement() {
     emitByte(OP_PRINT);
 }
 
+static void expressionStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' after expression.");
+    emitByte(OP_POP);
+}
+
+static void varDeclaration() {
+    // TODO
+}
+
 static void declaration() {
-    statement();
+    if (match(TOKEN_VAR)) {
+        varDeclaration();
+    } else {
+        statement();
+    }
+
+    if (parser.panicMode) synchronize();
 }
 
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else {
+        expressionStatement();
     }
 }
 
@@ -296,6 +315,33 @@ static void errorAt(Token *token, const char *message) {
 
     fprintf(stderr, ": %s\n", message);
     parser.hadError = true;
+}
+
+static void synchronize() {
+    parser.panicMode = false;
+
+    while (parser.current.type != TOKEN_EOF) {
+        // if we just passed a semicolon, then that is a good boundary
+        if (parser.previous.type == TOKEN_SEMICOLON) return;
+        // if we are looking at a new class, fun, var, for etc
+        // then that is also a good boundary
+        switch (parser.current.type) {
+            case TOKEN_CLASS:
+            case TOKEN_FUN:
+            case TOKEN_VAR:
+            case TOKEN_FOR:
+            case TOKEN_IF:
+            case TOKEN_WHILE:
+            case TOKEN_PRINT:
+            case TOKEN_RETURN:
+                return;
+
+            // otherwise we keep marching until we hit something interesting
+            default:
+                advance();
+                break;
+        }
+    }
 }
 
 

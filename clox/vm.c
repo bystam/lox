@@ -70,6 +70,7 @@ static InterpretResult run() {
             case OP_NIL: stackPush(NIL_VAL); break;
             case OP_TRUE: stackPush(BOOL_VAL(true)); break;
             case OP_FALSE: stackPush(BOOL_VAL(false)); break;
+            case OP_POP: stackPop(); break;
 
             case OP_EQUAL: {
                 Value b = stackPop();
