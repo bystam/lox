@@ -20,11 +20,13 @@ static void resetStack() {
 void VM_init() {
     resetStack();
     vm.objects = NULL;
+    Table_init(&vm.globals);
     Table_init(&vm.strings);
 }
 
 void VM_free() {
     Table_free(&vm.strings);
+    Table_free(&vm.globals);
     freeObjects();
 }
 
@@ -38,6 +40,7 @@ static void runtimeError(const char* format, ...);
 static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, operator) \
     do { \
         if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
@@ -71,6 +74,32 @@ static InterpretResult run() {
             case OP_TRUE: stackPush(BOOL_VAL(true)); break;
             case OP_FALSE: stackPush(BOOL_VAL(false)); break;
             case OP_POP: stackPop(); break;
+
+            case OP_DEFINE_GLOBAL: {
+                ObjString *name = READ_STRING();
+                Table_set(&vm.globals, name, peek(0));
+                stackPop();
+                break;
+            }
+            case OP_GET_GLOBAL: {
+                ObjString *name = READ_STRING();
+                Value value;
+                if (!Table_get(&vm.globals, name, &value)) {
+                    runtimeError("Undefined variable: '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                stackPush(value);
+                break;
+            }
+            case OP_SET_GLOBAL: {
+                ObjString *name = READ_STRING();
+                if (Table_set(&vm.globals, name, peek(0))) {
+                    Table_delete(&vm.globals, name);
+                    runtimeError("Undefined variable: '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                break;
+            }
 
             case OP_EQUAL: {
                 Value b = stackPop();
@@ -127,6 +156,7 @@ static InterpretResult run() {
     }
 
 #undef READ_BYTE
+#undef READ_STRING
 #undef READ_CONSTANT
 #undef BINARY_OP
 }

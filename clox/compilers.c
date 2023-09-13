@@ -34,7 +34,7 @@ typedef enum {
     PREC_PRIMARY
 } Precedence;
 
-typedef void (*ParseFn)();
+typedef void (*ParseFn)(bool canAssign);
 
 typedef struct {
     ParseFn prefix;
@@ -55,11 +55,17 @@ static void endCompiler();
 
 static void statement();
 static void declaration();
-static void expression();
+static uint8_t parseVariable(const char *errorMessage);
+static uint8_t identifierConstant(Token *name);
+static void defineVariable(uint8_t);
+static void namedVariable(Token name, bool canAssign);
 
+static void expression();
 static void synchronize();
 static void errorAt(Token* token, const char* message);
+
 static void errorAtCurrent(const char* message);
+
 static void error(const char* message);
 
 bool compile(const char *source, Chunk *chunk) {
@@ -162,7 +168,9 @@ static void parsePrecedence(Precedence precedence) {
         error("Expect expression.");
         return;
     }
-    prefixRule(); // parse left (maybe only) side
+
+    bool canAssign = precedence <= PREC_ASSIGNMENT;
+    prefixRule(canAssign); // parse left (maybe only) side
 
     // When input precedence is low, this will most likely hit and keep calling recursively
     // but if it is high, this is unlikely to happen right now.
@@ -187,16 +195,16 @@ static void parsePrecedence(Precedence precedence) {
     while (precedence <= getRule(parser.current.type)->precedence) {
         advance(); // consume operator
         ParseFn infixRule = getRule(parser.previous.type)->infix;
-        infixRule(); // parse right side
+        infixRule(canAssign); // parse right side
     }
 }
 
-static void number() {
+static void number(bool canAssign) {
     double value = strtod(parser.previous.start, NULL);
     emitConstant(NUMBER_VAL(value));
 }
 
-static void string() {
+static void string(bool canAssign) {
     ObjString *obj = ObjString_copyFrom(
             parser.previous.start + 1, // trim leading "
             parser.previous.length - 2 // trim trailing "
@@ -204,12 +212,16 @@ static void string() {
     emitConstant(OBJ_VAL(obj));
 }
 
-static void grouping() {
+static void variable(bool canAssign) {
+    namedVariable(parser.previous, canAssign);
+}
+
+static void grouping(bool canAssign) {
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression.");
 }
 
-static void binary() {
+static void binary(bool canAssign) {
     TokenType operatorType = parser.previous.type;
     ParseRule *rule = getRule(operatorType);
     parsePrecedence((Precedence)rule->precedence + 1); // parse deeper, but only for "more important" rules
@@ -229,7 +241,7 @@ static void binary() {
     }
 }
 
-static void unary() {
+static void unary(bool canAssign) {
     TokenType operatorType = parser.previous.type;
 
     parsePrecedence(PREC_UNARY);
@@ -241,7 +253,7 @@ static void unary() {
     }
 }
 
-static void literal() {
+static void literal(bool canAssign) {
     TokenType literalType = parser.previous.type;
     switch (literalType) {
         case TOKEN_NIL: emitByte(OP_NIL); break;
@@ -264,7 +276,39 @@ static void expressionStatement() {
 }
 
 static void varDeclaration() {
-    // TODO
+    uint8_t global = parseVariable("Expected variable name.");
+
+    if (match(TOKEN_EQUAL)) { // initial value
+        expression();
+    } else {
+        emitByte(OP_NIL);
+    }
+    consume(TOKEN_SEMICOLON, "Expected semicolon after variable declaration.");
+
+    defineVariable(global);
+}
+
+static uint8_t parseVariable(const char *errorMessage) {
+    consume(TOKEN_IDENTIFIER, errorMessage);
+    return identifierConstant(&parser.previous);
+}
+
+static uint8_t identifierConstant(Token *name) {
+    return makeConstant(OBJ_VAL(ObjString_copyFrom(name->start, name->length)));
+}
+
+static void defineVariable(uint8_t global) {
+    emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+static void namedVariable(Token name, bool canAssign) {
+    uint8_t arg = identifierConstant(&name);
+    if (canAssign && match(TOKEN_EQUAL)) {
+        expression();
+        emitBytes(OP_SET_GLOBAL, arg);
+    } else {
+        emitBytes(OP_GET_GLOBAL, arg);
+    }
 }
 
 static void declaration() {
@@ -365,8 +409,8 @@ ParseRule rules[] = {
         [TOKEN_GREATER_EQUAL] = {NULL,     binary, PREC_COMPARISON},
         [TOKEN_LESS]          = {NULL,     binary, PREC_COMPARISON},
         [TOKEN_LESS_EQUAL]    = {NULL,     binary, PREC_COMPARISON},
-        [TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
-        [TOKEN_STRING]        = {string,     NULL,   PREC_NONE},
+        [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE},
+        [TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
         [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
         [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
         [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
